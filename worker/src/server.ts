@@ -52,7 +52,7 @@ app.get('/rush-status', (req: Request, res: Response) => {
   res.status(200).json({ success: true, data: status });
 });
 
-app.listen(config.port, () => {
-  console.log(`[Rush Worker] Ready and listening on port ${config.port}`);
+app.listen(config.port, '0.0.0.0', () => {
+  console.log(`[Rush Worker] Ready and listening on http://0.0.0.0:${config.port}`);
   console.log(`[Rush Worker] Target API: ${config.targetApiUrl}`);
 });

@@ -10,24 +10,30 @@ async function bootstrap() {
   console.log(`[Atomic Seat API] Starting instance: ${config.instanceId}`);
   console.log(`[Atomic Seat API] Default locking strategy: ${config.lockStrategy}`);
 
-  // 1. Connect MongoDB
-  await connectMongo();
-
-  // 2. Setup Express & HTTP Server
+  // 1. Setup Express & HTTP Server
   const app = createApp();
   const server = createServer(app);
 
-  // 3. Setup Socket.io with Redis Adapter
+  // 2. Setup Socket.io
   initSocket(server);
 
-  // 4. Start Redis Heartbeat loop for active instance tracking
-  heartbeatService.start();
-
-  // 5. Listen on configured port
-  server.listen(config.port, () => {
-    console.log(`[Atomic Seat API] Ready and listening on port ${config.port}`);
-    console.log(`[Atomic Seat API] Health check: http://localhost:${config.port}/health`);
+  // 3. Listen on 0.0.0.0 and configured port immediately (satisfies Cloud Run startup probe)
+  server.listen(config.port, '0.0.0.0', () => {
+    console.log(`[Atomic Seat API] Ready and listening on http://0.0.0.0:${config.port}`);
+    console.log(`[Atomic Seat API] Health check: http://0.0.0.0:${config.port}/health`);
   });
+
+  // 4. Asynchronously connect to MongoDB
+  connectMongo().catch((err) => {
+    console.warn(`[MongoDB] Connection warning: ${err.message}. Check MONGODB_URI environment variable.`);
+  });
+
+  // 5. Start Redis Heartbeat loop
+  try {
+    heartbeatService.start();
+  } catch (err: any) {
+    console.warn(`[Heartbeat] Redis heartbeat initialization skipped: ${err.message}`);
+  }
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {
