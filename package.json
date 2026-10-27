@@ -1,0 +1,32 @@
+{
+  "name": "atomic-seat",
+  "version": "1.0.0",
+  "description": "Atomic Seat: An event ticket booking system with live seat locking - Every seat. Exactly once.",
+  "private": true,
+  "workspaces": [
+    "api",
+    "web",
+    "worker"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=api",
+    "dev:web": "npm run dev --workspace=web",
+    "dev:worker": "npm run dev --workspace=worker",
+    "test:api": "npm run test --workspace=api",
+    "build:api": "npm run build --workspace=api",
+    "build:web": "npm run build --workspace=web",
+    "build:worker": "npm run build --workspace=worker",
+    "seed:api": "npm run seed --workspace=api"
+  },
+  "keywords": [
+    "atomic-seat",
+    "concurrency",
+    "distributed-locking",
+    "redis",
+    "mongodb",
+    "socketio",
+    "cloud-run"
+  ],
+  "author": "",
+  "license": "MIT"
+}

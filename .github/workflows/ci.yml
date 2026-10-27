@@ -1,0 +1,40 @@
+name: CI Test & Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-build:
+    name: Test & Build Monorepo
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Build API TypeScript
+        run: npm run build:api
+
+      - name: Build Rush Worker TypeScript
+        run: npm run build:worker
+
+      - name: Run API Concurrency Integration Tests (500 Concurrent Locks)
+        run: npm run test:api
+
+      - name: Build Next.js Web UI
+        run: npm run build:web
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000
+          NEXT_PUBLIC_WS_URL: http://localhost:4000
