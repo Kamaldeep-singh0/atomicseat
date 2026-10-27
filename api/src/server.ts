@@ -23,10 +23,16 @@ async function bootstrap() {
     console.log(`[Atomic Seat API] Health check: http://0.0.0.0:${config.port}/health`);
   });
 
-  // 4. Asynchronously connect to MongoDB
-  connectMongo().catch((err) => {
-    console.warn(`[MongoDB] Connection warning: ${err.message}. Check MONGODB_URI environment variable.`);
-  });
+  // 4. Connect to MongoDB with auto-retry
+  const connectWithRetry = async () => {
+    try {
+      await connectMongo();
+    } catch (err: any) {
+      console.warn(`[MongoDB] Initial connection failed (${err.message}). Retrying in 4s...`);
+      setTimeout(connectWithRetry, 4000);
+    }
+  };
+  connectWithRetry();
 
   // 5. Start Redis Heartbeat loop
   try {

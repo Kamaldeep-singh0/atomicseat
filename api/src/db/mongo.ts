@@ -13,11 +13,13 @@ export async function connectMongo(uri?: string): Promise<typeof mongoose> {
     const conn = await mongoose.connect(targetUri, {
       serverSelectionTimeoutMS: 5000,
       autoIndex: true,
+      maxPoolSize: 10,
     });
     isConnected = true;
     console.log(`[MongoDB] Connected to database: ${conn.connection.name} (Host: ${conn.connection.host})`);
     return mongoose;
   } catch (error) {
+    isConnected = false;
     console.error('[MongoDB] Connection error:', error);
     throw error;
   }
