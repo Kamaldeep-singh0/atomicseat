@@ -11,25 +11,46 @@ export function getRedisClient(customClient?: Redis): Redis {
   }
 
   if (!redisClient) {
-    redisClient = new Redis(config.redisUrl, {
-      maxRetriesPerRequest: 3,
-      retryStrategy(times) {
-        const delay = Math.min(times * 100, 3000);
-        return delay;
+    const isUpstash = config.redisUrl.includes('upstash.io');
+    const isTls = config.redisUrl.startsWith('rediss://') || isUpstash;
+
+    // Convert redis:// to rediss:// for Upstash if needed
+    let cleanUrl = config.redisUrl;
+    if (isUpstash && cleanUrl.startsWith('redis://')) {
+      cleanUrl = cleanUrl.replace('redis://', 'rediss://');
+    }
+
+    const options: any = {
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+      retryStrategy(times: number) {
+        return Math.min(times * 150, 3000);
       },
       lazyConnect: false,
-    });
+    };
 
-    redisClient.on('connect', () => {
-      console.log(`[Redis] Connected successfully to ${config.redisUrl}`);
-    });
+    if (isTls) {
+      options.tls = {
+        rejectUnauthorized: false,
+      };
+    }
 
-    redisClient.on('error', (err) => {
-      console.warn(`[Redis] Client warning/error: ${err.message}`);
-    });
+    try {
+      redisClient = new Redis(cleanUrl, options);
+
+      redisClient.on('connect', () => {
+        console.log(`[Redis] Connected successfully to Redis cluster`);
+      });
+
+      redisClient.on('error', (err) => {
+        console.warn(`[Redis] Client warning: ${err.message}`);
+      });
+    } catch (err: any) {
+      console.warn(`[Redis] Client init warning: ${err.message}`);
+    }
   }
 
-  return redisClient;
+  return redisClient!;
 }
 
 export function getRedisSubscriber(customSub?: Redis): Redis {
@@ -39,13 +60,18 @@ export function getRedisSubscriber(customSub?: Redis): Redis {
   }
 
   if (!redisSubClient) {
-    redisSubClient = getRedisClient().duplicate();
-    redisSubClient.on('error', (err) => {
-      console.warn(`[Redis Subscriber] Warning/error: ${err.message}`);
-    });
+    try {
+      const client = getRedisClient();
+      redisSubClient = client.duplicate();
+      redisSubClient.on('error', (err) => {
+        console.warn(`[Redis Subscriber] Warning: ${err.message}`);
+      });
+    } catch (err: any) {
+      console.warn(`[Redis Subscriber] Init warning: ${err.message}`);
+    }
   }
 
-  return redisSubClient;
+  return redisSubClient!;
 }
 
 export async function disconnectRedis(): Promise<void> {

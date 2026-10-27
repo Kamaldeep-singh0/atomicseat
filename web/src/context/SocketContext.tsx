@@ -38,17 +38,21 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       setIsConnected(false);
     });
 
+    let lastRefetch = 0;
     s.io.on('reconnect', (attempt) => {
-      console.log(`[Socket.io] Reconnected after attempt #${attempt}. Re-fetching full state...`);
+      console.log(`[Socket.io] Reconnected after attempt #${attempt}.`);
       setIsConnected(true);
-      // Trigger all registered reconnect listeners to re-fetch full seat state
-      reconnectCallbacks.current.forEach((cb) => {
-        try {
-          cb();
-        } catch (e) {
-          console.error('[Socket.io] Reconnect handler error:', e);
-        }
-      });
+      const now = Date.now();
+      if (now - lastRefetch > 3000) {
+        lastRefetch = now;
+        reconnectCallbacks.current.forEach((cb) => {
+          try {
+            cb();
+          } catch (e) {
+            console.error('[Socket.io] Reconnect handler error:', e);
+          }
+        });
+      }
     });
 
     setSocket(s);

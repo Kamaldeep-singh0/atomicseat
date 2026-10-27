@@ -49,9 +49,16 @@ async function bootstrap() {
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
+
+  process.on('uncaughtException', (err) => {
+    console.error('[Process UncaughtException]', err);
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    console.error('[Process UnhandledRejection]', reason);
+  });
 }
 
 bootstrap().catch((err) => {
   console.error('[Atomic Seat API] Fatal startup error:', err);
-  process.exit(1);
 });
